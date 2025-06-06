@@ -1,0 +1,43 @@
+<!-- signup.ejs -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <h1>Créer un compte</h1>
+    <form action="/signup" method="POST">
+        <label>Nom :</label>
+        <input type="text" name="lastname" required><br>
+
+        <label>Prénom :</label>
+        <input type="text" name="firstname" required><br>
+
+        <label>Email :</label>
+        <input type="email" name="email" required><br>
+
+        <label>Mot de passe :</label>
+        <input type="password" name="password" required><br>
+
+        <label>Confirmer le mot de passe :</label>
+        <input type="password" name="confirmPassword" required><br>
+
+        <label>Téléphone :</label>
+        <input type="text" name="phone"><br>
+
+        <label>Date de naissance :</label>
+        <input type="date" name="birthdate"><br>
+
+        <label>Adresse :</label>
+        <input type="text" name="address"><br>
+
+        <button type="submit">S'inscrire</button>
+    </form>
+
+    <% if (message) { %>
+        <p><%= message %></p>
+    <% } %>
+</body>
+</html>
