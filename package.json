@@ -1,0 +1,34 @@
+{
+  "name": "auth-projet",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node--env-file=.env index.js",
+    "dev": "node --watch --trace-warnings --env-file=.env index.js",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "auth-projet": "file:",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.14.1",
+    "multer": "^2.0.1",
+    "node-cron": "^4.1.0",
+    "node-geocoder": "^4.4.1",
+    "nodemailer": "^6.10.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0"
+  }
+}
