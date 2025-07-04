@@ -5,6 +5,7 @@ exports.corsOptions = {
             'http://localhost:5173',  // Pour le développement local du frontend
             'http://localhost:5500',  // Pour le développement local du frontend
             'http://172.20.10.6:5173',  // Pour le développement local du frontend
+            'https://joblink-1r0l.onrender.com', // Pour le déploiement sur Render
             'http://127.0.0.1:5173' ]
             
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
