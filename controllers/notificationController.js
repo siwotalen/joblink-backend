@@ -79,3 +79,27 @@ exports.marquerToutesNotificationsCommeLues = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.supprimerNotification = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.user;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return next(new AppError('ID de notification invalide.', 400));
+        }
+
+        const notification = await Notification.findOneAndDelete(
+            { _id: id, idUtilisateurDestinataire: userId }
+        );
+
+        if (!notification) {
+            return next(new AppError('Notification non trouvée ou non accessible.', 404));
+        }
+        
+        res.status(200).json({ success: true, message: 'Notification supprimée avec succès.' });
+    } catch (error) {
+        logger.error("Erreur supprimerNotification:", error);
+        next(error);
+    }
+};

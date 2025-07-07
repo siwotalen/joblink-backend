@@ -10,7 +10,7 @@ router.post('/', identifier, isAdmin, categorieController.createCategorie);
 router.put('/:id', identifier, isAdmin, categorieController.updateCategorie);
 router.delete('/:id', identifier, isAdmin, categorieController.deleteCategorie);
 
-// Route pour tous les utilisateurs authentifiés
-router.get('/', identifier, categorieController.getAllCategories);
+// Route pour tous les utilisateurs (avec ou sans authentification)
+router.get('/', categorieController.getAllCategories);
 
 module.exports = router;

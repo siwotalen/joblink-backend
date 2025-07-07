@@ -137,7 +137,8 @@ exports.getAllAnnonces = async (req, res, next) => {
             page = 1, limit = 10,
             categorie, ville, motCle,
             remunerationMin, remunerationMax,
-            longitude, latitude, distanceMaxKm
+            longitude, latitude, distanceMaxKm,
+            urgent, tri
         } = req.query;
 
         const queryFilters = { statut: 'active', dateExpiration: { $gte: new Date() } };
@@ -161,16 +162,31 @@ exports.getAllAnnonces = async (req, res, next) => {
             ];
         }
 
+        // --- FILTRE URGENT (pour tous) ---
+        if (urgent === 'true') {
+            queryFilters.estUrgent = true;
+        }
+
+        // --- FILTRES DE PRIX (pour tous) ---
+        if (remunerationMin && !isNaN(parseFloat(remunerationMin))) {
+            if (queryFilters['remuneration.montant']) {
+                queryFilters['remuneration.montant'].$gte = parseFloat(remunerationMin);
+            } else {
+                queryFilters['remuneration.montant'] = { $gte: parseFloat(remunerationMin) };
+            }
+        }
+        if (remunerationMax && !isNaN(parseFloat(remunerationMax))) {
+            if (queryFilters['remuneration.montant']) {
+                queryFilters['remuneration.montant'].$lte = parseFloat(remunerationMax);
+            } else {
+                queryFilters['remuneration.montant'] = { $lte: parseFloat(remunerationMax) };
+            }
+        }
+
         // --- FILTRES AVANCÉS (premium uniquement) ---
         let isGeoQuery = false;
         let userCoords = null;
         if (isPremium) {
-            if (remunerationMin && !isNaN(parseFloat(remunerationMin))) {
-                queryFilters['remuneration.montant'] = { ...queryFilters['remuneration.montant'], $gte: parseFloat(remunerationMin) };
-            }
-            if (remunerationMax && !isNaN(parseFloat(remunerationMax))) {
-                queryFilters['remuneration.montant'] = { ...queryFilters['remuneration.montant'], $lte: parseFloat(remunerationMax) };
-            }
             if (longitude && latitude) {
                 const lon = parseFloat(longitude);
                 const lat = parseFloat(latitude);
@@ -188,12 +204,35 @@ exports.getAllAnnonces = async (req, res, next) => {
             }
         }
 
+        // --- DÉFINIR L'ORDRE DE TRI ---
+        let sortOptions = { createdAt: -1 }; // Par défaut, plus récentes en premier
+        
+        if (tri) {
+            switch (tri) {
+                case 'recent':
+                    sortOptions = { createdAt: -1 };
+                    break;
+                case 'ancien':
+                    sortOptions = { createdAt: 1 };
+                    break;
+                case 'prixAsc':
+                    sortOptions = { 'remuneration.montant': 1 };
+                    break;
+                case 'prixDesc':
+                    sortOptions = { 'remuneration.montant': -1 };
+                    break;
+                default:
+                    sortOptions = { createdAt: -1 };
+            }
+        }
+
         // --- EXÉCUTION DE LA REQUÊTE ---
         let count, annonces;
         if (isGeoQuery) {
             const allGeoResults = await Annonce.find(queryFilters)
                 .populate('categorieId', 'nom')
                 .populate('employeurId', 'nom prenom profil.nomEntreprise profil.logoEntreprise')
+                .sort(sortOptions)
                 .lean();
 
             if (userCoords) {
@@ -222,7 +261,7 @@ exports.getAllAnnonces = async (req, res, next) => {
             const annoncesPromise = Annonce.find(queryFilters)
                 .populate('categorieId', 'nom')
                 .populate('employeurId', 'nom prenom profil.nomEntreprise profil.logoEntreprise')
-                .sort({ createdAt: -1 })
+                .sort(sortOptions)
                 .limit(parseInt(limit))
                 .skip((page - 1) * parseInt(limit))
                 .lean();

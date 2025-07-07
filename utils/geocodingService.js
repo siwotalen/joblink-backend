@@ -6,7 +6,7 @@ const logger = require('./logger'); // Assurez-vous que votre logger est bien im
 const options = {
   provider: 'openstreetmap',
   // Ajout du User-Agent personnalisé requis par Nominatim
-  userAgent: process.env.NOMINATIM_USER_AGENT || 'JobLinkApp/1.0 (juniorsiwo95@gmail.com)', // IMPORTANT !
+  userAgent: process.env.NOMINATIM_USER_AGENT || 'JobLinkApp/1.0 (juniorsiwo10@gmail.com)', // IMPORTANT !
   // httpAdapter: 'https', // Généralement géré par défaut, mais peut être forcé si besoin
   formatter: null 
 };

@@ -371,62 +371,110 @@ exports.SendForgotPasswordCode = async (req, res) => {
     }
 }
 exports.verifyForgotPasswordCode = async (req, res) => {
-    const { email, providedCode, newpassword} = req.body;  
+    const { email, code } = req.body;  
     try {
-        const { error, value } = acceptFPSchema.validate({ email, newpassword, providedCode });
-        if (error) {
-            return res.status(401).json({
+        if (!email || !code) {
+            return res.status(400).json({
                 success: false,
-                message: error.details[0].message,
+                message: 'Email et code requis',
             });
         }
-        const codeValue =providedCode.toString();
+        
+        const codeValue = code.toString();
         const existingUser = await User.findOne({email}).select("+forgotPasswordCode +forgotPasswordCodeValidation");
+        
         if(!existingUser){
             return res
             .status(401)
-            .json({ success: false, message: 'User does not exist',
+            .json({ success: false, message: 'Utilisateur non trouvé',
             });
         }
       
         if(!existingUser.forgotPasswordCode || !existingUser.forgotPasswordCodeValidation){
             return res
             .status(400)
-            .json({ success: false, message: 'something is wrong with the code!',});
+            .json({ success: false, message: 'Code de vérification non trouvé ou expiré',});
         }
+        
         if(Date.now() - existingUser.forgotPasswordCodeValidation > 5* 60 *1000){
             return res
             .status(400)
-            .json({ success: false, message: 'code has been expired!',});
+            .json({ success: false, message: 'Code de vérification expiré',});
         }
+        
         const hashedCodeValue = await hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE_SECRET)
         if(hashedCodeValue === existingUser.forgotPasswordCode){
-            const hashedPassword = await doHash(newpassword, 12);
-            existingUser.password = hashedPassword;
-            existingUser.forgotPasswordCode = undefined;
-            existingUser.forgotPasswordCodeValidation = undefined;
-            await existingUser.save()
-            // Dans changePassword et verifyForgotPasswordCode, après await existingUser.save()
-            const userForNotif = await User.findById(userId || existingUser._id).select('email'); // Récupérer l'email
-            await createNotificationJobLink(
-                userId || existingUser._id,
-                'MOT_DE_PASSE_MODIFIE',
-                'Votre mot de passe sur JobLink a été modifié avec succès. Si vous n\'êtes pas à l\'origine de cette modification, veuillez contacter immédiatement notre support.',
-                '/profil/parametres/securite' // Lien vers les paramètres de sécurité
-            );
+            // Code valide, on ne change pas encore le mot de passe
+            // On garde le code pour l'étape suivante
             return res
             .status(200)
-            .json({ success: true, message: 'password updated!',});
+            .json({ success: true, message: 'Code vérifié avec succès!',});
 
         }
         return res
         .status(400)
-        .json({ success: false, message: 'unexpected occured!',});
+        .json({ success: false, message: 'Code invalide',});
     }
     catch(error){
         console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur serveur',
+        });
     }
 }
+exports.changePasswordAfterVerification = async (req, res) => {
+    const { email, newPassword } = req.body;
+    try {
+        const existingUser = await User.findOne({ email }).select("+forgotPasswordCode +forgotPasswordCodeValidation");
+        
+        if (!existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: 'Utilisateur non trouvé',
+            });
+        }
+
+        if (!existingUser.forgotPasswordCode || !existingUser.forgotPasswordCodeValidation) {
+            return res.status(400).json({
+                success: false,
+                message: 'Code de vérification non trouvé ou expiré',
+            });
+        }
+
+        if (Date.now() - existingUser.forgotPasswordCodeValidation > 5 * 60 * 1000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Code de vérification expiré',
+            });
+        }
+
+        const hashedPassword = await doHash(newPassword, 12);
+        existingUser.password = hashedPassword;
+        existingUser.forgotPasswordCode = undefined;
+        existingUser.forgotPasswordCodeValidation = undefined;
+        await existingUser.save();
+
+        // Notification de changement de mot de passe
+        await createNotificationJobLink(
+            existingUser._id,
+            'MOT_DE_PASSE_MODIFIE',
+            'Votre mot de passe sur JobLink a été modifié avec succès. Si vous n\'êtes pas à l\'origine de cette modification, veuillez contacter immédiatement notre support.',
+            '/profil/parametres/securite'
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: 'Mot de passe mis à jour avec succès!',
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur serveur',
+        });
+    }
+};
 exports.updateProfilUser = async (req, res) => {
     const userId = req.user.userId;  // récupère via JWT
     const { newlastname, newfirsname, newphone, newbirsdays, newaddress } = req.body;

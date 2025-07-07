@@ -21,10 +21,18 @@ router.patch(
 
 // Marquer toutes mes notifications comme lues
 router.patch(
-    'marquer-tout-lu',
+    '/marquer-tout-lu',
     identifier,
     notificationController.marquerToutesNotificationsCommeLues // ou notificationController.markAllMyNotificationsAsRead
 );
+
+// Supprimer une notification
+router.delete(
+    '/:id',
+    identifier,
+    notificationController.supprimerNotification
+);
+
 // router.get(
 //     '/:notificationId', // :notificationId sera req.params.notificationId
 //     identifier,

@@ -15,7 +15,7 @@ router.post(
 );
 
 // Obtenir les avis pour un utilisateur spécifique (route publique ou authentifiée)
-router.get('/recus', avisController.getAvisRecus); 
+router.get('/recus', identifier, avisController.getAvisRecus); 
 router.get('/utilisateur/:utilisateurId', avisController.getAvisPourUtilisateur); 
 // Si authentification requise pour voir les avis : router.get('/utilisateur/:utilisateurId', identifier, avisController.getAvisPourUtilisateur);
 

@@ -8,6 +8,7 @@ const Signalement = require('../models/signalementModel'); // S'assurer de l'imp
 const { adminUpdateSignalementSchema } = require('../middlewares/validator'); // S'assurer de l'import
 const { createNotificationJobLink,createAdminNotificationJobLink } = require('../utils/notificationManager');
 const Transaction = require('../models/transactionModel'); // Importer
+const Avis = require('../models/avisModel');
 
 
 // --- Gestion des Utilisateurs par l'Admin ---
@@ -388,5 +389,112 @@ exports.getAllTransactions = async (req, res, next) => {
     } catch (error) {
         logger.error("Erreur getAllTransactions (Admin):", error);
         next(error);
+    }
+};
+
+// --- Statistiques globales pour le dashboard admin ---
+exports.getDashboardStatsAdmin = async (req, res) => {
+    try {
+        const [totalUsers, totalJobs, reportedContent] = await Promise.all([
+            User.countDocuments({}),
+            Annonce.countDocuments({}),
+            Signalement.countDocuments({})
+        ]);
+        res.status(200).json({
+            success: true,
+            stats: {
+                totalUsers,
+                totalJobs,
+                reportedContent
+            }
+        });
+    } catch (error) {
+        console.error("Erreur getDashboardStatsAdmin:", error);
+        res.status(500).json({ success: false, message: 'Erreur serveur.' });
+    }
+};
+
+// --- Gestion des Avis par l'Admin ---
+
+exports.getAllAvisAdmin = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, note, estApprouve, estVisible, cibleRole, auteurRole } = req.query;
+        const queryFilters = {};
+        if (note) queryFilters.note = parseInt(note);
+        if (estApprouve !== undefined && estApprouve !== '') queryFilters.estApprouve = estApprouve === 'true';
+        if (estVisible !== undefined && estVisible !== '') queryFilters.estVisible = estVisible === 'true';
+        if (cibleRole) queryFilters.cibleRole = cibleRole;
+        if (auteurRole) queryFilters.auteurRole = auteurRole;
+        const count = await Avis.countDocuments(queryFilters);
+        const avis = await Avis.find(queryFilters)
+            .populate('auteurId', 'nom prenom email')
+            .populate('cibleId', 'nom prenom email')
+            .populate('annonceId', 'titre')
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .exec();
+        res.status(200).json({
+            success: true,
+            avis,
+            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+            totalAvis: count,
+        });
+    } catch (error) {
+        console.error("Erreur getAllAvisAdmin:", error);
+        res.status(500).json({ success: false, message: 'Erreur serveur.' });
+    }
+};
+
+exports.updateAvisAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estApprouve, estVisible } = req.body;
+        const updateData = {};
+        if (estApprouve !== undefined) updateData.estApprouve = estApprouve;
+        if (estVisible !== undefined) updateData.estVisible = estVisible;
+        const avis = await Avis.findByIdAndUpdate(id, { $set: updateData }, { new: true, runValidators: true })
+            .populate('auteurId', 'nom prenom email')
+            .populate('cibleId', 'nom prenom email')
+            .populate('annonceId', 'titre');
+        if (!avis) {
+            return res.status(404).json({ success: false, message: 'Avis non trouvé.' });
+        }
+        res.status(200).json({ success: true, message: 'Avis modéré.', avis });
+    } catch (error) {
+        console.error("Erreur updateAvisAdmin:", error);
+        res.status(500).json({ success: false, message: 'Erreur serveur.' });
+    }
+};
+
+exports.getAdvancedStatsAdmin = async (req, res) => {
+    try {
+        // Utilisateurs par rôle
+        const usersByRole = await User.aggregate([
+            { $group: { _id: "$role", count: { $sum: 1 } } }
+        ]);
+        // Annonces par statut
+        const jobsByStatus = await Annonce.aggregate([
+            { $group: { _id: "$statut", count: { $sum: 1 } } }
+        ]);
+        // Signalements par type
+        const reportsByType = await Signalement.aggregate([
+            { $group: { _id: "$cibleType", count: { $sum: 1 } } }
+        ]);
+        // Avis par note
+        const reviewsByNote = await Avis.aggregate([
+            { $group: { _id: "$note", count: { $sum: 1 } } }
+        ]);
+        res.status(200).json({
+            success: true,
+            usersByRole,
+            jobsByStatus,
+            reportsByType,
+            reviewsByNote
+        });
+    } catch (error) {
+        console.error("Erreur getAdvancedStatsAdmin:", error);
+        res.status(500).json({ success: false, message: 'Erreur serveur.' });
     }
 };

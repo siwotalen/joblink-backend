@@ -75,7 +75,7 @@ exports.getDashboardStatsTravailleur = async (req, res, next) => {
         const [
             candidaturesRecentes,
             statsStatut,
-            // jobsSauvegardesRecents // À ajouter quand le modèle SavedJob existera
+            user
         ] = await Promise.all([
             // 1. Récupérer les 3 dernières candidatures avec leurs détails
             Candidature.find({ travailleurId })
@@ -92,30 +92,33 @@ exports.getDashboardStatsTravailleur = async (req, res, next) => {
                 { $match: { travailleurId: new mongoose.Types.ObjectId(travailleurId) } },
                 { $group: { _id: '$statut', count: { $sum: 1 } } }
             ]),
+            
+            // 3. Récupérer l'utilisateur pour les jobs sauvegardés
+            User.findById(travailleurId)
         ]);
         
         // Transformer les stats en un objet plus simple à utiliser
         const statsFinales = {
-            total: 0,
-            en_attente: 0,
-            vue: 0,
-            preselectionnee: 0,
-            acceptee: 0,
-            rejete: 0
+            candidaturesTotal: 0,
+            candidaturesAcceptees: 0,
+            entretiens: 0,
+            savedJobs: user?.savedJobs?.length || 0
         };
+        
         statsStatut.forEach(stat => {
-            if (statsFinales.hasOwnProperty(stat._id)) {
-                statsFinales[stat._id] = stat.count;
+            statsFinales.candidaturesTotal += stat.count;
+            if (stat._id === 'acceptee') {
+                statsFinales.candidaturesAcceptees = stat.count;
             }
-            statsFinales.total += stat.count;
+            if (stat._id === 'preselectionnee') {
+                statsFinales.entretiens = stat.count;
+            }
         });
-
 
         res.status(200).json({
             success: true,
             stats: statsFinales,
-            candidaturesRecentes,
-            // jobsSauvegardesRecents
+            candidaturesRecentes
         });
 
     } catch (error) {

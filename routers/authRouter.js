@@ -12,7 +12,8 @@ router.patch('/send-verification-code',identifier,authController.SendVerificatio
 router.patch('/verify-verification-code',identifier,authController.verifyVerificationCode);
 
 router.patch('/change-password',identifier,authController.changePassword);
-router.patch('/send-forgot-password-code',loginLimiter,identifier,authController.SendForgotPasswordCode);
-router.patch('/verify-forgot-password-code',identifier,authController.verifyForgotPasswordCode);
+router.patch('/send-forgot-password-code',loginLimiter,authController.SendForgotPasswordCode);
+router.patch('/verify-forgot-password-code',authController.verifyForgotPasswordCode);
+router.patch('/change-password-after-verification',authController.changePasswordAfterVerification);
 
 module.exports=router;

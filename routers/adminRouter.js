@@ -46,4 +46,15 @@ router.put('/categories/:id', identifier, isAdmin, categorieController.updateCat
 router.delete('/categories/:id', identifier, isAdmin, categorieController.deleteCategorie);
 
 router.get('/transactions', adminController.getAllTransactions);
+
+// --- Routes pour la gestion des Avis ---
+router.get('/avis', adminController.getAllAvisAdmin);
+router.put('/avis/:id', adminController.updateAvisAdmin);
+
+// --- Statistiques globales pour le dashboard admin ---
+router.get('/dashboard/stats', adminController.getDashboardStatsAdmin);
+
+// --- Statistiques avancées pour le dashboard admin ---
+router.get('/advanced-stats', adminController.getAdvancedStatsAdmin);
+
 module.exports = router;

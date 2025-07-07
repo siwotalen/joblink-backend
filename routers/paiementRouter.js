@@ -12,6 +12,10 @@ router.post('/initier-simulation', identifier, paiementController.initierPaiemen
 // Dans un vrai système, ce serait un webhook appelé par la passerelle de paiement
 router.post('/confirmer-simulation/:transactionId', identifier, paiementController.confirmerPaiementSimule);
 
+// Nouvelles routes pour les produits et abonnements
+router.get('/produits', identifier, paiementController.getProduitsDisponibles);
+router.get('/abonnement', identifier, paiementController.getAbonnementActuel);
+
 // Optionnel: Route pour que l'utilisateur voie ses propres transactions
 // router.get('/mes-transactions', identifier, paiementController.getMesTransactions);
 

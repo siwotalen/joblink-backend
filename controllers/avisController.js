@@ -154,9 +154,19 @@ exports.getAvisPourUtilisateur = async (req, res, next) => {
 exports.getAvisRecus = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const avis = await Avis.find({ destinataire: userId }).sort({ date: -1 }).lean();
+        const avis = await Avis.find({ 
+            cibleId: userId,
+            estApprouve: true,
+            estVisible: true 
+        })
+        .populate('auteurId', 'nom prenom photoDeProfil.cheminAcces role')
+        .populate('annonceId', 'titre')
+        .sort({ createdAt: -1 })
+        .lean();
+        
         res.json({ success: true, avis });
     } catch (err) {
+        console.error('Erreur getAvisRecus:', err);
         res.status(500).json({ success: false, message: "Erreur serveur." });
     }
 };
